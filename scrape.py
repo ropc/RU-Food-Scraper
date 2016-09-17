@@ -101,8 +101,8 @@ if __name__=="__main__":
 	parser.add_argument('--dicts', dest='dicts', action='store_true', default=False)
 	args = parser.parse_args()
 
-	json.dump(scrape(dicts=args.dicts), args.outfile, indent=(1 if args.fancy else None))
+	json.dump(scrape(dicts=args.dicts), args.outfile, indent=(2 if args.fancy else None))
 
-	print(json.dumps(scrape(dicts=args.dicts), indent=1))
+	print(json.dumps(scrape(dicts=args.dicts), indent=2))
 	
 	args.outfile.close()
