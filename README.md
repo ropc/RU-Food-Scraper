@@ -4,7 +4,7 @@ Scrapes food.rutgers.edu for menus and nutritional information, saves to file.
 
 Official website reports wonky numbers for certain fields, so only scraping calories, serving size, and ingredients for now.
 
-###Format
+##Format
 Enable indentation with the `--fancy` flag.
 
 Use the `--dicts` flag to organize for easier random access, like so:
@@ -87,5 +87,13 @@ Use without the `--dicts` flag to organize with arrays like the old food API doe
 ]
 ```
 
-###Dependencies
+## Setup
+
+Clone, then run with python. Dependencies can be installed with: `pip install -r requirements.txt`
+
+Also available as a [docker](https://www.docker.com/) [container](https://hub.docker.com/r/ropc/rufoodscraper/). Run with `docker run ropc/rufoodscraper`
+
+
+##Dependencies
+
 Python script requires package `BeautifulSoup`.
