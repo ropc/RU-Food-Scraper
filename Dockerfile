@@ -1,5 +1,8 @@
 FROM debian:latest
-RUN apt-get update && apt-get -y install python3 python3-pip
+RUN apt-get update && apt-get -y install \
+    python3 \
+    python3-pip \
+ && rm -rf /var/lib/apt/lists/*
 RUN mkdir /RU-Food-Scraper
 WORKDIR /RU-Food-Scraper
 COPY requirements.txt .
