@@ -102,5 +102,7 @@ if __name__=="__main__":
 	args = parser.parse_args()
 
 	json.dump(scrape(dicts=args.dicts), args.outfile, indent=(1 if args.fancy else None))
+
+	print(json.dumps(scrape(dicts=args.dicts), indent=1))
 	
 	args.outfile.close()
