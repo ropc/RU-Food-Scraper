@@ -9,6 +9,8 @@ services:
 
 before_install:
   - docker build -t ropc/rufoodscraper .
+
+script:
   - docker run ropc/rufoodscraper
 
 after_success:
