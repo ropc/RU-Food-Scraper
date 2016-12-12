@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from bs4 import BeautifulSoup
 from re import compile
+from pprint import pprint
 try:
 	from urllib2 import urlopen
 except:
@@ -9,9 +10,26 @@ except:
 ingredientSplit = compile(r'(?:[^,(]|\([^)]*\))+')
 URL_PREFIX = "http://menuportal.dining.rutgers.edu/foodpro/"
 
+knownUrls = {}
+hit = 0
+miss = 0
+
 def scrapeNutritionReport(url):
 	"""Scrapes a Nutrition Report page, returns name, serving, calories, ingredients"""
-	page = urlopen(url).read()
+	#print("scrapeNutritionReport {0}".format(url))
+	if knownUrls.get(url) is not None:
+		global hit
+		hit += 1
+		return knownUrls[url]
+	else:
+		global miss
+		miss += 1
+	
+	try:
+		page = urlopen(url).read()
+	except:
+		return {}
+	
 	soup = BeautifulSoup(page)
 	ret = {}
 
@@ -41,11 +59,14 @@ def scrapeNutritionReport(url):
 		ret['ingredients'] = [ing.strip() for ing in ingredientSplit.findall(p.string)]
 	except AttributeError:
 		pass
+	
+	knownUrls[url] = ret
 
 	return ret
 
 def scrapeMeal(url, dicts=0):
 	"""Parses meal, calls for scraping of each nutrition facts"""
+	#print("scrapeMeal: {0} {1}".format(url, dicts))
 	ret={}
 	page = urlopen(url).read()
 	soup = BeautifulSoup(page)
@@ -55,6 +76,8 @@ def scrapeMeal(url, dicts=0):
 		if not ret.get(category):
 			ret[category]=[]
 		ret[category].append(scrapeNutritionReport(URL_PREFIX+link['href']))
+	#print("known urls so far:")
+	#pprint(knownUrls)
 	if dicts:
 		return ret
 	else:
@@ -65,6 +88,7 @@ def scrapeMeal(url, dicts=0):
 
 def scrapeCampus(url, dicts=0):
 	"""Calls for the scraping of the meals of a campus"""
+	#print("scrapeCampus: {0} {1}".format(url, dicts))
 	meals = ('Breakfast', 'Lunch', 'Dinner', 'Knight Room')
 	if dicts:
 		return {meal: scrapeMeal(url + "&mealName=" + meal.replace(' ', '+')) for meal in meals}
@@ -76,6 +100,7 @@ def scrapeCampus(url, dicts=0):
 
 def scrape(dicts=0):
 	"""Calls for the scraping of the menus of each campus"""
+	#print("scrape: {0}".format(dicts))
 	prefix = URL_PREFIX + "pickmenu.asp?locationNum=0"
 	# There doesn't seem to be a hall #2
 	halls = (('Brower Commons', '1'), ('Livingston Dining Commons', '3'),
@@ -101,6 +126,8 @@ if __name__=="__main__":
 	parser.add_argument('--dicts', dest='dicts', action='store_true', default=False)
 	args = parser.parse_args()
 
-	json.dump(scrape(dicts=args.dicts), args.outfile, indent=(1 if args.fancy else None))
+	finaldict = scrape(dicts=args.dicts)
+	print("hits: {0}, misses: {1}, percent hit: {2}".format(hit, miss, (hit / (hit + miss))))
+	json.dump(finaldict, args.outfile, indent=(1 if args.fancy else None))
 	
 	args.outfile.close()
