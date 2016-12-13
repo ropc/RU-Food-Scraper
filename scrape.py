@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 from bs4 import BeautifulSoup
 from re import compile
-from pprint import pprint
+import gzip
+
 try:
 	from urllib2 import urlopen
 except:
@@ -120,14 +121,14 @@ if __name__=="__main__":
 	parser = ArgumentParser(prog='RU Food Scraper', description='Scrape the Rutgers' +
                         'Dining Website for nutritional information\n' +
                         'Prints output as json.')
-	parser.add_argument('outfile', nargs='?', type=FileType('w'), default=stdout,
+	parser.add_argument('outfile', type=str,
 	                    help="Output file (defaults to stdout).")
-	parser.add_argument('--fancy', dest='fancy', action='store_true', default=False)
 	parser.add_argument('--dicts', dest='dicts', action='store_true', default=False)
 	args = parser.parse_args()
 
 	finaldict = scrape(dicts=args.dicts)
 	print("hits: {0}, misses: {1}, percent hit: {2}".format(hit, miss, (hit / (hit + miss))))
-	json.dump(finaldict, args.outfile, indent=(1 if args.fancy else None))
-	
-	args.outfile.close()
+	with open(args.outfile, "w") as normalfile:
+		json.dump(finaldict, normalfile)
+		with gzip.open(args.outfile + ".gz", "wb") as compressedfile:
+			compressedfile.write(json.dumps(finaldict).encode())
