@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 from bs4 import BeautifulSoup
 from re import compile
+import requests
 import gzip
-
-try:
-	from urllib2 import urlopen
-except:
-	from urllib.request import urlopen
+import boto3
+import datetime
+import json
 
 ingredientSplit = compile(r'(?:[^,(]|\([^)]*\))+')
 URL_PREFIX = "http://menuportal.dining.rutgers.edu/foodpro/"
@@ -27,11 +26,11 @@ def scrapeNutritionReport(url):
 		miss += 1
 	
 	try:
-		page = urlopen(url).read()
-	except:
+		page = requests.get(url)
+	except ConnectionError:
 		return {}
 	
-	soup = BeautifulSoup(page)
+	soup = BeautifulSoup(page.content)
 	ret = {}
 
 	# Get item name
@@ -69,8 +68,8 @@ def scrapeMeal(url, dicts=0):
 	"""Parses meal, calls for scraping of each nutrition facts"""
 	#print("scrapeMeal: {0} {1}".format(url, dicts))
 	ret={}
-	page = urlopen(url).read()
-	soup = BeautifulSoup(page)
+	page = requests.get(url)
+	soup = BeautifulSoup(page.content)
 	soup.prettify()
 	for link in soup.find("div", "menuBox").find_all("a", href=True):
 		category = link.find_previous("p", style="margin: 3px 0;").string[3:-3]
@@ -114,21 +113,22 @@ def scrape(dicts=0):
 			"meals" : scrapeCampus(prefix + hall[1], dicts=0)
 		} for hall in halls]
 
-if __name__=="__main__":
-	import json
-	from sys import stdout
-	from argparse import ArgumentParser, FileType
-	parser = ArgumentParser(prog='RU Food Scraper', description='Scrape the Rutgers' +
-                        'Dining Website for nutritional information\n' +
-                        'Prints output as json.')
-	parser.add_argument('outfile', type=str,
-	                    help="Output file (defaults to stdout).")
-	parser.add_argument('--dicts', dest='dicts', action='store_true', default=False)
-	args = parser.parse_args()
+def main():
+	s3 = boto3.resource("s3")
+	rufood_bucket = s3.Bucket("rufood")
 
-	finaldict = scrape(dicts=args.dicts)
+	finaldict = scrape(dicts=True)
+
+	timestamp = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())
+
 	print("hits: {0}, misses: {1}, percent hit: {2}".format(hit, miss, (hit / (hit + miss))))
-	with open(args.outfile, "w") as normalfile:
-		json.dump(finaldict, normalfile)
-		with gzip.open(args.outfile + ".gz", "wb") as compressedfile:
-			compressedfile.write(json.dumps(finaldict).encode())
+	
+	finaljsonbytes = json.dumps(finaldict).encode()
+	finaljsonbytescompressed = gzip.compress(finaljsonbytes, compresslevel=9)
+	rufood_bucket.put_object(Key='latest.json', Body=finaljsonbytes, ACL='public-read', ContentType='application/json')
+	rufood_bucket.put_object(Key='latest.json.gz', Body=finaljsonbytescompressed, ACL='public-read', ContentType='application/json', ContentEncoding='gzip')
+	rufood_bucket.copy({'Bucket': 'rufood', 'Key': 'latest.json'}, '{0}.json'.format(timestamp))
+	rufood_bucket.copy({'Bucket': 'rufood', 'Key': 'latest.json.gz'}, '{0}.json.gz'.format(timestamp))
+
+if __name__=="__main__":
+	main()
