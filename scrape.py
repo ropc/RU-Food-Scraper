@@ -4,7 +4,7 @@ from re import compile
 import requests
 import gzip
 import boto3
-import datetime
+import pendulum
 import json
 
 ingredientSplit = compile(r'(?:[^,(]|\([^)]*\))+')
@@ -119,7 +119,7 @@ def main():
 
 	finaldict = scrape(dicts=True)
 
-	timestamp = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())
+	timestamp = pendulum.now('US/Eastern').format('%Y-%m-%d %H:%M:%S')
 
 	print("hits: {0}, misses: {1}, percent hit: {2}".format(hit, miss, (hit / (hit + miss))))
 	
