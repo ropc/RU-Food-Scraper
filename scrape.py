@@ -123,7 +123,7 @@ def main():
 
 	print("hits: {0}, misses: {1}, percent hit: {2}".format(hit, miss, (hit / (hit + miss))))
 	
-	finaljsonbytes = json.dumps(finaldict).encode()
+	finaljsonbytes = json.dumps(finaldict, sort_keys=True).encode()
 	finaljsonbytescompressed = gzip.compress(finaljsonbytes, compresslevel=9)
 	rufood_bucket.put_object(Key='latest.json', Body=finaljsonbytes, ACL='public-read', ContentType='application/json')
 	rufood_bucket.put_object(Key='latest.json.gz', Body=finaljsonbytescompressed, ACL='public-read', ContentType='application/json', ContentEncoding='gzip')
