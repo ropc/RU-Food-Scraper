@@ -122,11 +122,11 @@ def main():
     timestamp = pendulum.now('US/Eastern').format('%Y-%m-%d %H:%M:%S')
 
     print("hits: {0}, misses: {1}, percent hit: {2}".format(hit, miss, (hit / (hit + miss))))
-    
+
     finaljsonbytes = json.dumps(finaldict, sort_keys=True).encode()
     finaljsonbytescompressed = gzip.compress(finaljsonbytes, compresslevel=9)
     rufood_bucket.put_object(Key='latest.json', Body=finaljsonbytes, ACL='public-read', ContentType='application/json')
-    rufood_bucket.put_object(Key='latest.json.gz', Body=finaljsonbytescompressed, ACL='public-read', ContentType='application/json', ContentEncoding='gzip')
+    rufood_bucket.put_object(Key='latest.json.gz', Body=finaljsonbytescompressed, ACL='public-read', ContentType='application/json', ContentEncoding='gzip', CacheControl='max-age=300')
     rufood_bucket.copy({'Bucket': 'rufood', 'Key': 'latest.json'}, '{0}.json'.format(timestamp))
     rufood_bucket.copy({'Bucket': 'rufood', 'Key': 'latest.json.gz'}, '{0}.json.gz'.format(timestamp))
 
